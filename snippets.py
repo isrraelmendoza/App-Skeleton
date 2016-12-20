@@ -38,8 +38,30 @@ def get(name):
         return "404: Snippet not found"
     else:
         return snippet[0]   # Return only the snippet
+        
+def catalog():
+    """Return a list of keywords available."""
+    logging.info("Retrieving keywords")
+    with connection, connection.cursor() as cursor:
+        cursor.execute("SELECT * FROM snippets ORDER BY keyword")
+        rows = cursor.fetchall()    # Returns a list of tuples
+    logging.debug("Keywords retrieved successfully")
+    names = [x[0] for x in rows]    # Get the first tuple item for each list item
+    return names
 
+def search(query):
+    """Retrieve list of snippets that contain the search query string.
+    Returns a list.
+    """
 
+    logging.info("Retrieving search query")
+    query = "'%" + query + "%'"
+    with connection, connection.cursor() as cursor:
+        cursor.execute("SELECT * FROM snippets WHERE message LIKE %s" %(query,))
+        queries = cursor.fetchall()
+    logging.debug("Search query finished successfully")
+    return queries    
+    
 def main():
     """Main function"""
     logging.info("Constructing parser")
@@ -56,6 +78,17 @@ def main():
     logging.debug("Constructing get subparser")
     get_parser = subparsers.add_parser("get", help = "Return a snippet")
     get_parser.add_argument("name", help = "Name of the snippet")
+    
+    # Subparser for catalog command
+    logging.debug("Constructing catalog subparser")
+    catalog_parser = subparsers.add_parser("catalog", help = "Return all keywords")
+
+     # Subparser for search command
+    logging.debug("Constructing search subparser")
+    search_parser = subparsers.add_parser("search", help = "Return snippets with given string")
+    search_parser.add_argument("query", help = "String to search for")
+
+
 
     arguments = parser.parse_args()
     # Convert parsed arguments from Namespace to dictionary
@@ -68,7 +101,13 @@ def main():
     elif command == "get":
         snippet = get(**arguments)
         print("Retrieved snippet: {!r}".format(snippet))
-
+    elif command == "catalog":
+        keywords = catalog()
+        print ("Keywords: {!r}".format(keywords))
+    elif command == "search":
+        entries = search(**arguments)
+        print ("Snippets that contain your query: {!r}".format(entries))
 
 if __name__ == "__main__":
     main()
+    
